@@ -1,0 +1,11 @@
+{
+  "name": "buildjs",
+  "version": "1.0.0",
+  "description": "Yet another JS task runner",
+  "main": "build.js",
+  "bin": {
+    "build.js": "build.js"
+  },
+  "author": "",
+  "license": "ISC"
+}
