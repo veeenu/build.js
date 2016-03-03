@@ -72,6 +72,16 @@ tasks.forEach(function(i) {
 
   if(!task) return;
 
+  if(task instanceof Array) {
+    task = {
+      run: task
+    };
+  } else if(typeof task === 'string') {
+    task = {
+      run: [task]
+    };
+  }
+
   task.run.forEach(function(t) {
     children.push(runCmd(t, {
       cwd: task.cwd,
