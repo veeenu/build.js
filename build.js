@@ -5,19 +5,30 @@ const exec = require('child_process').exec,
       path = require('path'),
       conf = (function() {
         var dir   = process.cwd(),
-            files;
+            files, ret = null;
 
-        while(dir !== '/') {
+        while(dir !== '/' && ret === null) {
           files = fs.readdirSync(dir);
 
           if(!files.indexOf('package.json'))
             dir = path.dirname(dir);
           else
-            return require(path.join(dir, '/package.json'));
+            ret = require(path.join(dir, '/package.json')).buildjs || {};
         }
 
-        return { buildjs: null };
-      }()).buildjs || {};
+        if(ret !== null) for(var i in ret) {
+          var task = ret[i];
+
+          if(task instanceof Array) {
+            ret[i] = { run: task };
+          } else if(typeof task === 'string') {
+            ret[i] = { run: [task] };
+          }
+        
+        }
+
+        return ret || {};
+      }());
 
 const C0 = '\033[0m',
       C1 = '\033[1;34m',
@@ -36,11 +47,11 @@ const runCmd = (function() {
     console.log(`[${C1}*${C0}] Process ${cid}: ${C1 + str + C0}`);
 
     child.stdout.on('data', (data) => {
-      console.log(`[${C1 + cid + C0}] ${trim(data)}`);
+      trim(data).split(/\n/).forEach(line => console.log(`[${C1 + cid + C0}] ${line}`));
     });
 
     child.stderr.on('data', (data) => {
-      console.log(`[${C3 + cid + C0}] ${trim(data)}`);
+      trim(data).split(/\n/).forEach(line => console.log(`[${C3 + cid + C0}] ${line}`));
     });
 
     child.on('close', (data) => {
@@ -56,8 +67,9 @@ var children = [];
 process.env.PATH = './node_modules/.bin;' + process.env.PATH;
 
 var tasks = process.argv.splice(2).reduce(function(o, i) {
-  if(o.indexOf(i) === -1) {
+  if(o.indexOf(i) === -1 && i in conf) {
     o.push(i);
+    console.log(i, conf);
     ('tasks' in conf[i] ? conf[i].tasks : []).forEach(function(j) {
       o.push(j);
     });
@@ -71,16 +83,6 @@ tasks.forEach(function(i) {
   var task = conf[i];
 
   if(!task) return;
-
-  if(task instanceof Array) {
-    task = {
-      run: task
-    };
-  } else if(typeof task === 'string') {
-    task = {
-      run: [task]
-    };
-  }
 
   task.run.forEach(function(t) {
     children.push(runCmd(t, {
