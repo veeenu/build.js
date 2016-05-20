@@ -69,7 +69,7 @@ process.env.PATH = './node_modules/.bin;' + process.env.PATH;
 var tasks = process.argv.splice(2).reduce(function(o, i) {
   if(o.indexOf(i) === -1 && i in conf) {
     o.push(i);
-    console.log(i, conf);
+    //console.log(i, conf);
     ('tasks' in conf[i] ? conf[i].tasks : []).forEach(function(j) {
       o.push(j);
     });
@@ -84,10 +84,15 @@ tasks.forEach(function(i) {
 
   if(!task) return;
 
+  var mEnv = {};
+
+  Object.assign(mEnv, process.env);
+  Object.assign(mEnv, task.env || {});
+
   task.run.forEach(function(t) {
     children.push(runCmd(t, {
       cwd: task.cwd,
-      env: task.env
+      env: mEnv
     }));
   });
 });
